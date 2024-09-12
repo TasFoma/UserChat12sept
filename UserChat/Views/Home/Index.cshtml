@@ -1,0 +1,98 @@
+﻿@{
+    ViewData["Title"] = "Chat"; // Устанавливаем заголовок страницы
+}
+
+<h1>@ViewData["Title"]</h1>
+
+<!-- Иконка для открытия чата -->
+<button id="open-chat" style="position: fixed; bottom: 20px; right: 20px; z-index: 1000; background: #007BFF; color: white; border: none; border-radius: 5px; padding: 10px;">💬</button>
+
+<!-- Контейнер для чата, изначально скрыт -->
+<div id="chat-container" style="display: none; position: fixed; bottom: 70px; right: 20px; width: 300px; border: 1px solid #ccc; background: white; z-index: 999; border-radius: 5px;">
+    <div id="chat-header" style="background: #007BFF; color: white; padding: 10px; border-top-left-radius: 5px; border-top-right-radius: 5px;">
+        <h4 style="margin: 0;">Чат с поддержкой</h4>
+        <button id="close-chat" style="float: right; background: none; border: none; color: white; cursor: pointer;">&times;</button>
+    </div>
+    <div id="chat-messages" style="max-height: 200px; overflow-y: auto; padding: 10px;"></div>
+
+    <!-- Поле для ввода имени пользователя -->
+    <input type="text" id="user-name" placeholder="Введите ваше имя" style="width: calc(100% - 60px); margin: 5px 0; padding: 5px;" />
+
+    <!-- Поле для ввода сообщения -->
+    <input type="text" id="chat-input" placeholder="Введите сообщение..." style="width: calc(100% - 60px); margin: 5px 0; padding: 5px;" />
+    <button id="send-chat" style="width: 100px; margin: 5px;">Отправить</button>
+</div>
+
+@section Scripts {
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            let userName = '';
+            let socket = new WebSocket('wss://localhost:7162/ws/chat');
+            let isSending = false; // Флаг для отслеживания состояния отправки
+
+            // Обработчик события при открытии WebSocket
+            socket.onopen = function () {
+                console.log('WebSocket подключен');
+            };
+
+            // Обработчик получения сообщения
+            socket.onmessage = function (event) {
+                const message = event.data;
+
+                // Проверяем, не является ли сообщение дублирующим
+                if ($('#chat-messages').children().last().text() !== message) {
+                    // Добавляем сообщение в контейнер для клиента
+                    $('#chat-messages').append('<div>' + message + '</div>');
+                    scrollToBottom(); // Прокручиваем вниз после добавления нового сообщения
+                }
+            };
+
+            // Открытие чата
+            $('#open-chat').on('click', function () {
+                $('#chat-container').toggle(); // Включаем или выключаем видимость чата
+            });
+
+            // Закрытие чата
+            $('#close-chat').on('click', function () {
+                $('#chat-container').hide(); // Скрываем чат
+            });
+
+            // Функция для прокрутки вниз
+            function scrollToBottom() {
+                var chatMessages = $('#chat-messages');
+                chatMessages.scrollTop(chatMessages[0].scrollHeight);
+            }
+
+            // Отправка сообщения
+            $('#send-chat').on('click', function () {
+                if (isSending) return; // Если сообщение уже отправляется, выходим
+                isSending = true; // Устанавливаем флаг отправки
+
+                // Проверяем и устанавливаем имя пользователя
+                if (!userName) {
+                    userName = $('#user-name').val().trim();
+                    if (!userName) {
+                        alert("Пожалуйста, введите ваше имя.");
+                        isSending = false; // Сбрасываем флаг
+                        return;
+                    }
+                    $('#user-name').prop('disabled', true); // Отключаем поле ввода имени после его ввода
+                    $('#user-name').hide(); // Скрываем поле ввода имени после ввода
+                }
+
+                var message = $('#chat-input').val().trim();
+                if (message) {
+                    socket.send(userName + ': ' + message); // Отправляем сообщение через WebSocket
+                    $('#chat-input').val(''); // Очищаем поле ввода
+
+                    // Добавляем сообщение в контейнер и прокручиваем вниз
+                    $('#chat-messages').append('<div>' + userName + ': ' + message + '</div>');
+                    scrollToBottom(); // Прокрутка вниз
+                }
+
+                isSending = false; // Сбрасываем флаг после завершения
+            });
+        });
+    </script>
+}

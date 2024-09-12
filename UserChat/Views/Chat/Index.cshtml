@@ -1,0 +1,27 @@
+﻿@model List<ChatMessage>
+
+<h1>Сообщения чата</h1>
+
+<table>
+    <thead>
+        <tr>
+            <th>ID</th>
+            <th>Имя пользователя</th>
+            <th>Сообщение</th>
+            <th>Время</th>
+            <th>Ответ администратора</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var message in Model)
+        {
+            <tr>
+                <td>@message.Id</td>
+                <td>@message.UserName</td>
+                <td>@message.Message</td>
+                <td>@message.Timestamp</td>
+                <td>@(message.IsAdminResponse ? "Да" : "Нет")</td>
+            </tr>
+        }
+    </tbody>
+</table>
