@@ -1,16 +1,18 @@
-﻿using Microsoft.EntityFrameworkCore;
-using System;
-using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
-
-namespace UserChat.Models
+﻿namespace UserChat.Models
 {
     public class ChatMessage
     {
-        public int Id { get; set; } // Поле идентификатора
-        public string UserName { get; set; } // Имя пользователя
-        public string Message { get; set; } // Сообщение
-        public DateTime Timestamp { get; set; } // Время отправки сообщения
-        public bool IsAdminResponse { get; set; } // Является ли ответом администратора
+        public int Id { get; set; }
+        public string UserName { get; set; }
+        public string Message { get; set; }
+        public DateTime Data { get; set; }
+        public UserType Type { get; set; }
+        public string Uid { get; set; } // Уникальный идентификатор пользователя (если требуется)
+    }
+
+    public enum UserType
+    {
+        User,
+        Admin
     }
 }

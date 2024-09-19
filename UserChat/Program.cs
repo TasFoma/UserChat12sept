@@ -1,29 +1,35 @@
+using Microsoft.AspNetCore.Builder;
+using Microsoft.AspNetCore.Hosting;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Hosting;
 using Microsoft.EntityFrameworkCore;
+using UserChat.Data; 
+using MySqlConnector;
 using UserChat;
-using UserChat.Controllers;
-using UserChat.Models;
-using static UserChat.ApiRequest;
+
 var builder = WebApplication.CreateBuilder(args);
 
-// Добавляем строку подключения и контекст базы данных
-builder.Services.AddDbContext<ChatContext>(options =>
-    options.UseMySql("Server=localhost;Database=chatdatabase;User=root;Password=igdathun;",
-        new MySqlServerVersion(new Version(10, 3, 11))));
+// Добавление контекста базы данных
+builder.Services.AddDbContext<ApplicationDbContext>(options =>
+    options.UseMySql(builder.Configuration.GetConnectionString("DefaultConnection"),
+    new MySqlServerVersion(new Version(8, 0, 21)))); // Убедитесь, что у вас правильная версия MySQL
 
-//  MVC и WebSocket
+// Регистрация ApiRequest как сервиса
+builder.Services.AddScoped<ApiRequest>();
+
+// Добавление контроллеров с представлениями
 builder.Services.AddControllersWithViews();
-builder.Services.AddScoped<ChatHandler>();
 
 var app = builder.Build();
 
-// Настройка middleware
+// Настройка конвейера обработки запросов
 if (app.Environment.IsDevelopment())
 {
     app.UseDeveloperExceptionPage();
 }
 else
 {
-    app.UseExceptionHandler("/Home/Error");
+    app.UseExceptionHandler("/Home/Error"); // Настройка обработки ошибок
     app.UseHsts();
 }
 
@@ -32,21 +38,11 @@ app.UseStaticFiles();
 
 app.UseRouting();
 
-// Включаем поддержку WebSocket
-app.UseWebSockets();
-
-// Маршрут для WebSocket
-app.Map("/ws", async context =>
-{
-    var chatHandler = context.RequestServices.GetRequiredService<ChatHandler>();
-    await chatHandler.HandleWebSocket(context);
-});
-
 app.UseAuthorization();
 
-// Настройка маршрутов для MVC
+// Настройка маршрутизации
 app.MapControllerRoute(
     name: "default",
-    pattern: "{controller=Chat}/{action=Index}/{id?}");
+    pattern: "{controller=Chat}/{action=Index}/{id?}"); //  контроллер и действие по умолчанию
 
 app.Run();
