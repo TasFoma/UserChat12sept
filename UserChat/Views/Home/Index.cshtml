@@ -1,26 +1,26 @@
 ﻿@{
-    ViewData["Title"] = "Chat"; // Устанавливаем заголовок страницы
+    ViewData["Title"] = "Chat"; // Устанавливаем заголовок
 }
 
 <h1>@ViewData["Title"]</h1>
 
 <!-- Иконка для открытия чата -->
-<button id="open-chat" style="position: fixed; bottom: 20px; right: 20px; z-index: 1000; background: #007BFF; color: white; border: none; border-radius: 5px; padding: 10px;">💬</button>
+<button id="open-chat" style="position: fixed; bottom: 20px; right: 20px; z-index: 1000;">💬</button>
 
 <!-- Контейнер для чата, изначально скрыт -->
-<div id="chat-container" style="display: none; position: fixed; bottom: 70px; right: 20px; width: 300px; border: 1px solid #ccc; background: white; z-index: 999; border-radius: 5px;">
-    <div id="chat-header" style="background: #007BFF; color: white; padding: 10px; border-top-left-radius: 5px; border-top-right-radius: 5px;">
+<div id="chat-container" style="display: none; position: fixed; bottom: 70px; right: 20px; width: 300px; border: 1px solid #ccc; background: white; z-index: 999;">
+    <div id="chat-header" style="background: #007BFF; color: white; padding: 10px;">
         <h4 style="margin: 0;">Чат с поддержкой</h4>
         <button id="close-chat" style="float: right; background: none; border: none; color: white; cursor: pointer;">&times;</button>
     </div>
     <div id="chat-messages" style="max-height: 200px; overflow-y: auto; padding: 10px;"></div>
 
     <!-- Поле для ввода имени пользователя -->
-    <input type="text" id="user-name" placeholder="Введите ваше имя" style="width: calc(100% - 60px); margin: 5px 0; padding: 5px;" />
+    <input type="text" id="user-name" placeholder="Введите ваше имя" style="width: calc(100% - 60px); margin: 5px 0;" />
 
     <!-- Поле для ввода сообщения -->
-    <input type="text" id="chat-input" placeholder="Введите сообщение..." style="width: calc(100% - 60px); margin: 5px 0; padding: 5px;" />
-    <button id="send-chat" style="width: 100px; margin: 5px;">Отправить</button>
+    <input type="text" id="chat-input" placeholder="Введите сообщение..." style="width: calc(100% - 60px);" />
+    <button id="send-chat" style="width: 100px;">Отправить</button>
 </div>
 
 @section Scripts {
@@ -31,12 +31,10 @@
             let socket = new WebSocket('wss://localhost:7162/ws/chat');
             let isSending = false; // Флаг для отслеживания состояния отправки
 
-            // Обработчик события при открытии WebSocket
             socket.onopen = function () {
                 console.log('WebSocket подключен');
             };
 
-            // Обработчик получения сообщения
             socket.onmessage = function (event) {
                 const message = event.data;
 
@@ -44,13 +42,16 @@
                 if ($('#chat-messages').children().last().text() !== message) {
                     // Добавляем сообщение в контейнер для клиента
                     $('#chat-messages').append('<div>' + message + '</div>');
-                    scrollToBottom(); // Прокручиваем вниз после добавления нового сообщения
+                    // Прокручиваем вниз после добавления нового сообщения
+                    scrollToBottom();
+                } else {
+                    console.log("Дублирующее сообщение не добавлено: " + message);
                 }
             };
 
             // Открытие чата
             $('#open-chat').on('click', function () {
-                $('#chat-container').toggle(); // Включаем или выключаем видимость чата
+                $('#chat-container').toggle(); // Включаем видимость чата
             });
 
             // Закрытие чата
@@ -69,7 +70,6 @@
                 if (isSending) return; // Если сообщение уже отправляется, выходим
                 isSending = true; // Устанавливаем флаг отправки
 
-                // Проверяем и устанавливаем имя пользователя
                 if (!userName) {
                     userName = $('#user-name').val().trim();
                     if (!userName) {

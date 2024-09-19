@@ -1,0 +1,20 @@
+﻿@model QuestionButtonsViewModel
+
+@if (Model.MainQuestions != null && Model.MainQuestions.Any())
+{
+    <h6>Доступные вопросы:</h6>
+    foreach (var question in Model.MainQuestions)
+    {
+        <button class="question-button" data-id="@question.Id" data-tree="@question.Tree" data-name="@question.Name" data-uid="@Model.Uid">
+            @question.Name
+        </button>
+    }
+}
+else
+{
+    <p>Нет доступных под-вопросов.</p>
+}
+<!-- Оставляем только одну кнопку "Назад" -->
+<button class="question-button" data-id="-1" data-tree="-1" data-name="Назад" data-uid="@Model.Uid" id="back-button">
+    Назад
+</button>

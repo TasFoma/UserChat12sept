@@ -1,27 +1,162 @@
-﻿@model List<ChatMessage>
+﻿@model ChatViewModel
 
-<h1>Сообщения чата</h1>
-
-<table>
-    <thead>
-        <tr>
-            <th>ID</th>
-            <th>Имя пользователя</th>
-            <th>Сообщение</th>
-            <th>Время</th>
-            <th>Ответ администратора</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var message in Model)
+<div id="chat-container">
+    <div id="chat-messages">
+        @if (Model.Messages != null && Model.Messages.Any())
         {
-            <tr>
-                <td>@message.Id</td>
-                <td>@message.UserName</td>
-                <td>@message.Message</td>
-                <td>@message.Timestamp</td>
-                <td>@(message.IsAdminResponse ? "Да" : "Нет")</td>
-            </tr>
+            <h6>Сообщения:</h6>
+            foreach (var message in Model.Messages)
+            {
+                <div class="chat-message">
+                    <strong>@message.UserName:</strong> @message.Message <br />
+                    <small>@message.Data.ToString("g")</small>
+                </div>
+            }
         }
-    </tbody>
-</table>
+        else
+        {
+            <p>Нет сообщений.</p>
+        }
+    </div>
+
+    <div id="question-buttons">
+        @Html.Partial("_QuestionButtons", new QuestionButtonsViewModel { MainQuestions = Model.MainQuestions, Uid = Model.Uid })
+    </div>
+
+    <!-- Удалите эту кнопку -->
+    <!-- <button id="back-button" style="margin-top: 10px;">Назад</button> -->
+</div>
+
+<!-- Поле для ручного ввода -->
+<div>
+    <input type="text" id="manualInput" placeholder="Введите ваш вопрос" />
+    <button id="submitManualInput">Отправить</button>
+</div>
+
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+<script>
+    let questionHistory = {}; // Объект для хранения истории вопросов
+    let currentIndex = -1; // Индекс текущего вопроса
+    let isProcessing = false; // Флаг для блокировки обработки
+
+    $(document).ready(function () {
+        $(document).on("click", ".question-button", function () {
+            if (isProcessing) return; // Если в процессе обработки, выходим
+
+            isProcessing = true; // Устанавливаем флаг обработки
+            var questionId = $(this).data("id");
+            var tree = $(this).data("tree");
+            var uid = "@Model.Uid";
+            var questionName = $(this).data("name"); // Получаем имя вопроса
+
+            // Если это кнопка "Назад", обрабатываем отдельно
+            if (questionId === -1) {
+                // Вызываем метод выбора вопроса для предыдущего состояния
+                if (currentIndex > 0) {
+                    currentIndex--; // Переход к предыдущему вопросу
+                    var previousState = questionHistory[currentIndex];
+
+                    if (previousState) {
+                        var questionId = previousState.questionId;
+                        var tree = previousState.tree;
+                        var questionName = previousState.questionName;
+
+                        // Вызываем метод выбора вопроса
+                        $.post('@Url.Action("SelectQuestion", "Chat")', { questionId: questionId, tree: tree, uid: uid, questionName: questionName })
+                            .done(function (data) {
+                                // Обновляем только под-вопросы
+                                $("#question-buttons").html(data);
+
+                                // Обновляем сообщения
+                                $.post('@Url.Action("UpdateMessages", "Chat")', { uid: uid })
+                                    .done(function (messageData) {
+                                        // Обновляем сообщения
+                                        $("#chat-messages").html(messageData);
+                                        // Прокручиваем вниз после добавления новых сообщений
+                                        scrollToBottom();
+                                    })
+                                    .fail(function () {
+                                        console.error("Ошибка при получении сообщений.");
+                                    });
+
+                                // Добавляем сообщение о возврате в чат
+                                var chatMessage = `<div class="chat-message"><strong>Вы вернулись к вопросу:</strong> ${questionName}</div>`;
+                                $("#chat-messages").append(chatMessage);
+                                scrollToBottom(); // Прокручиваем вниз
+
+                                // Сохраняем сообщение о возврате в базу данных
+                                $.post('@Url.Action("SaveReturnMessage", "Chat")', { uid: uid, questionName: questionName })
+                                    .fail(function () {
+                                        console.error("Ошибка при сохранении сообщения о возврате к вопросу.");
+                                    });
+                            })
+                            .fail(function () {
+                                console.error("Ошибка при возврате к предыдущему вопросу.");
+                            });
+                    }
+                }
+                isProcessing = false; // Сбрасываем флаг обработки
+                return; // Выходим из функции
+            }
+
+            // Сохраняем текущее состояние в истории
+            currentIndex++;
+            questionHistory[currentIndex] = { questionId, tree, questionName }; // Сохраняем состояние по индексу
+
+            // Вызываем метод выбора вопроса
+            $.post('@Url.Action("SelectQuestion", "Chat")', { questionId: questionId, tree: tree, uid: uid, questionName: questionName })
+                .done(function (data) {
+                    // Обновляем только под-вопросы
+                    $("#question-buttons").html(data);
+
+                    // Если нет под-вопросов, добавляем сообщение и не увеличиваем индекс
+                    if (data.trim() === "") {
+                        $("#chat-messages").append(`<div class="chat-message"><strong>Система:</strong> Нет доступных под-вопросов.</div>`);
+                        scrollToBottom();
+                        currentIndex--; // Уменьшаем индекс, чтобы избежать ошибки
+                    } else {
+                        // Обновляем сообщения
+                        $.post('@Url.Action("UpdateMessages", "Chat")', { uid: uid })
+                            .done(function (messageData) {
+                                // Обновляем сообщения
+                                $("#chat-messages").html(messageData);
+                                // Прокручиваем вниз после добавления новых сообщений
+                                scrollToBottom();
+                            })
+                            .fail(function () {
+                                console.error("Ошибка при получении сообщений.");
+                            });
+
+                        // Добавляем сообщение о выборе кнопки в чат, если оно не дублируется
+                        if (!$("#chat-messages").find(`strong:contains('${questionName}')`).length) {
+                            var chatMessage = `<div class="chat-message"><strong>Вы выбрали:</strong> ${questionName}</div><strong>Пожалуйста, выберите следующий раздел.</strong>`;
+                            $("#chat-messages").append(chatMessage);
+                            scrollToBottom(); // Прокручиваем вниз после добавления нового сообщения
+                        }
+                    }
+                })
+                .fail(function () {
+                    console.error("Ошибка при получении под-вопросов.");
+                })
+                .always(function () {
+                    isProcessing = false; // Сбрасываем флаг обработки после завершения
+                });
+        });
+
+        // Обработчик ручного ввода
+        $('#submitManualInput').click(function () {
+            var userInput = $('#manualInput').val();
+            var uid = '@Model.Uid'; // Получаем uid из модели
+            if (userInput) {
+                $.post('@Url.Action("SendMessage", "Chat")', { uid: uid, message: userInput }, function () {
+                    location.reload(); // Перезагружаем страницу, чтобы отобразить новое сообщение
+                });
+            }
+        });
+    });
+
+    function scrollToBottom() {
+        var chatMessages = $("#chat-messages");
+        chatMessages.scrollTop(chatMessages[0].scrollHeight);
+    }
+</script>
