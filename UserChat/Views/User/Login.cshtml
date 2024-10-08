@@ -1,0 +1,17 @@
+﻿@{
+    ViewData["Title"] = "Login";
+}
+
+<h2>Login</h2>
+
+<form asp-action="Login" method="post">
+    <div class="form-group">
+        <label for="phone">Номер телефона:</label>
+        <input type="text" class="form-control" id="phone" name="phone" required />
+    </div>
+    <button type="submit" class="btn btn-primary">Войти</button>
+</form>
+
+<p>
+    <a asp-action="CreateUser">Нет аккаунта? Зарегистрируйтесь!</a>
+</p>

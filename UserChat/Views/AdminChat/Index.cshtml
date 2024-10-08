@@ -1,0 +1,40 @@
+﻿@model UserChat.Models.ChatViewModel
+
+<h2>Админский чат</h2>
+
+<div>
+    <h3>Сообщения:</h3>
+    <ul>
+        @foreach (var message in Model.Messages)
+        {
+            @message.Message<br />
+            <small>@message.Data.ToString("HH:mm")</small>
+        }
+    </ul>
+</div>
+
+<div>
+    <h4>Введите сообщение:</h4>
+    <form asp-action="SendMessage" method="post">
+        <input type="hidden" name="uid" value="@Model.Uid" />
+        <input type="text" name="messageContent" />
+        <input type="hidden" name="isAdmin" value="true" /> <!--true, если администратор -->
+        <input type="submit" value="Отправить" />
+    </form>
+</div>
+
+<script>
+    $(document).ready(function () {
+        // Обновляем админский чат каждые 5 секунд
+        setInterval(function () {
+            $.get('@Url.Action("GetMessages", "AdminChat")', function (data) {
+                $("#admin-messages").html(data);
+                scrollToBottom(); // Прокручиваем вниз после обновления
+            });
+        }, 5000); // 5000 мс = 5 секунд
+    });
+
+    function scrollToBottom() {
+        var adminMessages = document.getElementById("admin-messages");
+        adminMessages.scrollTop = adminMessages.scrollHeight;
+    }</script>

@@ -1,0 +1,27 @@
+﻿@model QuestionButtonsViewModel
+
+@{
+    var currentTime = DateTime.Now.ToString("HH:mm");
+}
+<div class="chat-messages" style="max-height: 100%; overflow-y: auto; text-align: left;">
+    @if (Model.MainQuestions != null && Model.MainQuestions.Any())
+    {
+        foreach (var question in Model.MainQuestions)
+        {
+            <button class="question-button" data-id="@question.Id" data-tree="@question.Tree" data-name="@question.Name" data-uid="@Model.Uid" style="border-radius: 15px; width: 100%;  ">
+                @question.Name
+            </button>
+        }
+    }
+    else
+    {
+        <div class="chat-message admin">
+            <div class="admin-text">Нет доступных под-вопросов.</div>
+            <small class="small-gray">@currentTime</small>
+        </div>
+    }
+
+    <button class="question-button" data-id="-1" data-tree="-1" data-name="Назад" data-uid="@Model.Uid" id="back-button" style="border-radius: 15px;bottom:0px; width: 100%;">
+        Назад
+    </button>
+</div>
