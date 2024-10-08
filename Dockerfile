@@ -8,11 +8,11 @@ FROM mcr.microsoft.com/dotnet/sdk:5.0 AS build
 WORKDIR /src
 
 # Копируем файл проекта
-COPY ["User Chat/User Chat.csproj", "User Chat/"]  # Убедитесь, что путь указан правильно
+COPY ["User Chat/User Chat.csproj", "User Chat/"]
 RUN dotnet restore "User Chat/User Chat.csproj"
 
 # Копируем все остальные файлы
-COPY ["User Chat/", "User Chat/"]  # Копируем все файлы проекта
+COPY ["User Chat/", "User Chat/"]
 WORKDIR "/src/User Chat"
 RUN dotnet build "User Chat.csproj" -c Release -o /app/build
 
